@@ -1,0 +1,7 @@
+[package]
+name = "server"
+version = "0.1.0"
+authors = ["Alon Gal <alon.gal@iota.org>"]
+edition = "2018"
+
+[dependencies]
