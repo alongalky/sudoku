@@ -1,17 +1,24 @@
 <template>
   <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+    <Board :board="board"/>
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import Board from './components/Board.vue'
+import boards from './boards'
+
+const parseBoard = board => board
+  .match(/.{1,9}/g)
+  .map(row => row.split('').map(d => parseInt(d)))
+
+const board = parseBoard(boards[Math.floor(Math.random()*boards.length)]);
 
 export default {
   name: 'app',
+  data: () => ({ board }),
   components: {
-    HelloWorld
+    Board
   }
 }
 </script>
