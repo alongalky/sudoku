@@ -4,8 +4,8 @@
       <table class="sudoku-table">
         <tbody>
           <tr v-for="(row, irow) in board" :key="'row'+irow">
-            <td v-for="(cell, icell) in row" :key="'row'+irow+'cell'+icell">
-              <Cell :digit="cell"/>
+            <td v-for="(cell, icol) in row" :key="'row'+irow+'col'+icol">
+              <Cell :digit="cell" :sendDigit="sendDigit({irow, icol})" :isDigitValid="isDigitValid({irow, icol, board})"/>
             </td>
           </tr>
         </tbody>
@@ -16,11 +16,16 @@
 
 <script>
 import Cell from "./Cell.vue";
+import {isDigitValid} from '../App.vue'
 
 export default {
   name: "Board",
   props: {
-    board: Array
+    board: Array,
+    sendDigit: Function
+  },
+  methods: {
+    isDigitValid: ({irow, icol, board}) => digit => isDigitValid({irow, icol, board, digit})
   },
   components: {
     Cell
