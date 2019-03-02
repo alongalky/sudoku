@@ -1,7 +1,12 @@
 [package]
 name = "server"
 version = "0.1.0"
-authors = ["Alon Gal <alon.gal@iota.org>"]
+authors = ["Alon Gal <alongalky@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+rocket = "0.4.0"
+
+[dependencies.rusqlite]
+version = "0.16.0"
+features = ["bundled"]
