@@ -29,13 +29,14 @@ type ID = String;
 type MessageMap = Arc<Mutex<HashMap<ID, Game>>>;
 
 use ws::listen;
-use ws::{Factory, Error, Handler, Handshake, CloseCode, Sender, Result, Message};
+use ws::{Error, Handler, Handshake, CloseCode, Sender, Result, Message};
 use env_logger;
 const GAME_ID: &str = "abcde";
 
 struct Server {
     out: Sender,
-    games: MessageMap
+    games: MessageMap,
+    outputs: Arc<Mutex<Vec<Sender>>>,
 }
 
 use serde_derive::{Deserialize, Serialize};
@@ -49,6 +50,9 @@ struct SendDigitMessage {
 
 impl Handler for Server {
     fn on_open(&mut self, _: Handshake) -> Result<()> {
+        // Add new output to outputs
+        self.outputs.lock().unwrap().push(self.out.clone());
+
         let mut hashmap = self.games.lock().unwrap();
         if !hashmap.contains_key(GAME_ID) {
             println!("found key! {}", GAME_ID);
@@ -60,13 +64,12 @@ impl Handler for Server {
             hashmap.insert(GAME_ID.to_string(), game.clone());
         }
         let game = hashmap.get(GAME_ID).unwrap();
-        println!("new connection");
+        println!("new connection: {}", self.out.connection_id());
         
         self.out.send(Message::text(json!({
             "state": &game.state,
             "gameName": &game.name
-        }).to_string()));
-        Ok(())
+        }).to_string()))
     }
 
     fn on_message(&mut self, msg: Message) -> Result<()> {
@@ -75,19 +78,17 @@ impl Handler for Server {
         if let Message::Text(txt) = msg.clone() {
             let v: serde_json::Value = serde_json::from_str(&txt).unwrap();
             
-            if let typ = &v["type"] {
-                if typ == "send_digit" {
-                    let data: SendDigitMessage = serde_json::from_str(&txt).unwrap();
+            if &v["type"] == "send_digit" {
+                let data: SendDigitMessage = serde_json::from_str(&txt).unwrap();
 
-                    let mut hashmap = self.games.lock().unwrap();
-                    let mut game = hashmap.get_mut(GAME_ID).unwrap();
-                    game.update_digit(data.icol, data.irow, data.digit);
+                let mut hashmap = self.games.lock().unwrap();
+                let game = hashmap.get_mut(GAME_ID).unwrap();
+                game.update_digit(data.icol, data.irow, data.digit);
 
-                    self.out.send(Message::text(json!({
-                        "state": &game.state,
-                        "gameName": &game.name
-                    }).to_string()));
-                }
+                return self.send_everyone(Message::text(json!({
+                    "state": &game.state,
+                    "gameName": &game.name
+                }).to_string()));
             }
         }
 
@@ -102,20 +103,25 @@ impl Handler for Server {
                 "Closing handshake failed! Unable to obtain closing status from client."),
             _ => println!("The client encountered an error: {}", reason),
         }
-
-        // The connection is going down, so we need to decrement the count
-        // self.count.set(self.count.get() - 1)
     }
 
     fn on_error(&mut self, err: Error) {
         println!("The server encountered an error: {:?}", err);
     }
+}
 
+impl Server {
+    fn send_everyone(&self, msg: Message) -> Result<()> {
+        for out in self.outputs.lock().unwrap().iter() {
+            out.send(msg.clone())?;
+        }
+        Ok(())
+    }
 }
 
 fn main() {
     env_logger::init();
-    let mut map: MessageMap = Arc::new(Mutex::new(HashMap::<ID, Game>::new()));
-
-    listen("127.0.0.1:3012", |out| { Server { out: out, games: map.clone() } }).unwrap()
+    let map: MessageMap = Arc::new(Mutex::new(HashMap::<ID, Game>::new()));
+    let output_counter = Arc::new(Mutex::new(Vec::new()));
+    listen("127.0.0.1:3012", |out| { Server { outputs: output_counter.clone(), out: out, games: map.clone() } }).unwrap()
 }
