@@ -12,6 +12,7 @@ serde_json = "1.0"
 serde_derive = "1.0"
 ws = "*"
 env_logger = "0.6"
+uuid = { version = "0.7", features = ["v4"] }
 
 [dependencies.rocket_contrib]
 version = "0.4.0"

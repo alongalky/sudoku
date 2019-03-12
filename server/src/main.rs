@@ -1,6 +1,8 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 extern crate rand;
 extern crate serde_derive;
+extern crate uuid;
+use uuid::Uuid;
  
 use rand::thread_rng;
 use rand::seq::SliceRandom;
@@ -15,7 +17,8 @@ use boards::BOARDS;
 #[derive(Clone)]
 struct Game {
     name: String,
-    state: String
+    state: String,
+    players: Vec<Player>
 }
 
 impl Game {
@@ -23,6 +26,17 @@ impl Game {
         let index: usize = (irow * 9 + icol) as usize;
         self.state = self.state[..index].to_string() + &digit.to_string() + &self.state[(index+1)..].to_string();
     }
+
+    fn add_player(&mut self, player: Player) {
+        println!("Adding {}", &player.name);
+        self.players.push(player);
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct Player {
+    name: String,
+    id: String
 }
 
 type ID = String;
@@ -59,7 +73,8 @@ impl Handler for Server {
             let mut rng = thread_rng();
             let game = Game {
                 name: GAME_ID.to_string(),
-                state: BOARDS.choose(&mut rng).unwrap().to_string()
+                state: BOARDS.choose(&mut rng).unwrap().to_string(),
+                players: Vec::new()
             };
             hashmap.insert(GAME_ID.to_string(), game.clone());
         }
@@ -69,7 +84,10 @@ impl Handler for Server {
         self.out.send(Message::text(json!({
             "state": &game.state,
             "gameName": &game.name
-        }).to_string()))
+        }).to_string()))?;
+
+        self.update_players(&game)?;
+        Ok(())
     }
 
     fn on_message(&mut self, msg: Message) -> Result<()> {
@@ -89,6 +107,24 @@ impl Handler for Server {
                     "state": &game.state,
                     "gameName": &game.name
                 }).to_string()));
+            } else if &v["type"] == "connect" {
+                let mut hashmap = self.games.lock().unwrap();
+                let game = hashmap.get_mut(GAME_ID).unwrap();
+
+                let id = Uuid::new_v4().to_string();
+                let name: String = String::from(v["name"].as_str().unwrap());
+                game.add_player(Player {
+                    name: name.clone(),
+                    id: id.clone(),
+                });
+
+                self.out.send(Message::text(json!({
+                    "type": "welcome",
+                    "playerId": id,
+                    "name": name.clone()
+                }).to_string()))?;
+
+                self.update_players(&game)?;
             }
         }
 
@@ -115,6 +151,15 @@ impl Server {
         for out in self.outputs.lock().unwrap().iter() {
             out.send(msg.clone())?;
         }
+        Ok(())
+    }
+
+    fn update_players(&self, game: &Game) -> Result<()> {
+        let response = json!({
+            "type": "update_players",
+            "players": &game.players
+        });
+        self.send_everyone(Message::text(response.to_string()))?;
         Ok(())
     }
 }

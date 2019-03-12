@@ -1,19 +1,32 @@
 <template>
   <div id="app">
+    <ConnectPanel :onClickConnect="onClickConnect" />
     <Board :board="state.board" :sendDigit="sendDigit"/>
+    <ScoreBoard :players="state.players" />
   </div>
 </template>
 
 <script>
 const socket = new WebSocket("ws://localhost:3012");
-socket.onmessage = function (event) {
-  const incomingState = JSON.parse(event.data).state;
+socket.onmessage = event => {
+  const data = JSON.parse(event.data);
+  const incomingState = data.state;
   if (incomingState) {
     state.board = parseBoard(incomingState);
+  }
+
+  if (data.type === 'welcome') {
+    state.playerId = data.playerId;
+  }
+  
+  if (data.type === 'update_players') {
+    state.players = data.players;
   }
 }
 
 import Board from './components/Board.vue'
+import ConnectPanel from './components/ConnectPanel.vue'
+import ScoreBoard from './components/ScoreBoard.vue'
 
 const emptyCell = () => ({value: null})
 const givenCell = value => ({value, owner: 'given'})
@@ -28,7 +41,9 @@ const parseBoard = board => board
 
 const emptyBoard = parseBoard('000000000000000000000000000000000000000000000000000000000000000000000000000000000');
 const state = {
-  board: emptyBoard
+  board: emptyBoard,
+  players: [],
+  playerId: null
 };
 
 export const isDigitValid = ({board, irow, icol, digit}) => {
@@ -49,15 +64,25 @@ const sendDigit = ({irow, icol}) => digit => {
   }));
 }
 
+const onClickConnect = ({name}) => {
+  socket.send(JSON.stringify({
+    type: 'connect',
+    name
+  }))
+}
+
 export default {
   name: 'app',
   data: () => ({ state }),
   components: {
-    Board
+    Board,
+    ConnectPanel,
+    ScoreBoard
   },
   methods: {
     sendDigit,
-    isDigitValid
+    isDigitValid,
+    onClickConnect
   }
 }
 </script>
