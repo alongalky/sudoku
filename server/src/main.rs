@@ -27,16 +27,27 @@ impl Game {
         self.state = self.state[..index].to_string() + &digit.to_string() + &self.state[(index+1)..].to_string();
     }
 
+    fn increase_score(&mut self, id: &str) -> Result<()> {
+        let player: &mut Player = &mut self.players.iter_mut().find(|p| p.id == id).expect(format!("Player {} not found", &id).as_str());
+        player.score = player.score + 1;
+        Ok(())
+    }
+
     fn add_player(&mut self, player: Player) {
         println!("Adding {}", &player.name);
         self.players.push(player);
     }
+
+    fn player_exists(&self, id: &str) -> bool {
+        self.players.iter().position(|p| p.id == id) != None
+    }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 struct Player {
     name: String,
-    id: String
+    id: String,
+    score: u32,
 }
 
 type ID = String;
@@ -49,6 +60,7 @@ const GAME_ID: &str = "abcde";
 
 struct Server {
     out: Sender,
+    player_id: String,
     games: MessageMap,
     outputs: Arc<Mutex<Vec<Sender>>>,
 }
@@ -79,7 +91,7 @@ impl Handler for Server {
             hashmap.insert(GAME_ID.to_string(), game.clone());
         }
         let game = hashmap.get(GAME_ID).unwrap();
-        println!("new connection: {}", self.out.connection_id());
+        println!("new connection: {}. New player ID: {}", self.out.connection_id(), &self.player_id);
         
         self.out.send(Message::text(json!({
             "state": &game.state,
@@ -101,26 +113,33 @@ impl Handler for Server {
 
                 let mut hashmap = self.games.lock().unwrap();
                 let game = hashmap.get_mut(GAME_ID).unwrap();
+                if !game.player_exists(&self.player_id) {
+                    // player_id is not initialized yet
+                    return Ok(());
+                }
                 game.update_digit(data.icol, data.irow, data.digit);
+                game.increase_score(&self.player_id);
 
-                return self.send_everyone(Message::text(json!({
+                self.send_everyone(Message::text(json!({
                     "state": &game.state,
                     "gameName": &game.name
                 }).to_string()));
+
+                self.update_players(&game)?
             } else if &v["type"] == "connect" {
                 let mut hashmap = self.games.lock().unwrap();
                 let game = hashmap.get_mut(GAME_ID).unwrap();
 
-                let id = Uuid::new_v4().to_string();
                 let name: String = String::from(v["name"].as_str().unwrap());
                 game.add_player(Player {
                     name: name.clone(),
-                    id: id.clone(),
+                    id: self.player_id.clone(),
+                    score: 0,
                 });
 
                 self.out.send(Message::text(json!({
                     "type": "welcome",
-                    "playerId": id,
+                    "playerId": self.player_id.clone(),
                     "name": name.clone()
                 }).to_string()))?;
 
@@ -168,5 +187,5 @@ fn main() {
     env_logger::init();
     let map: MessageMap = Arc::new(Mutex::new(HashMap::<ID, Game>::new()));
     let output_counter = Arc::new(Mutex::new(Vec::new()));
-    listen("127.0.0.1:3012", |out| { Server { outputs: output_counter.clone(), out: out, games: map.clone() } }).unwrap()
+    listen("127.0.0.1:3012", |out| { Server { outputs: output_counter.clone(), out: out, games: map.clone(), player_id: Uuid::new_v4().to_string() } }).unwrap()
 }
