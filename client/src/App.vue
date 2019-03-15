@@ -49,9 +49,16 @@ const state = {
 export const isDigitValid = ({board, irow, icol, digit}) => {
   const rowValues = board[irow].map(cell => cell.value)
   const colValues = board.map(row => row[icol].value)
+  const boxLeftCol = icol - (icol % 3)
+  const boxTopRow = irow - (irow % 3)
+  const boxValues = [
+    ...board[boxTopRow].slice(boxLeftCol, boxLeftCol+3),
+    ...board[boxTopRow+1].slice(boxLeftCol, boxLeftCol+3),
+    ...board[boxTopRow+2].slice(boxLeftCol, boxLeftCol+3),
+  ].map(cell => cell.value)
+      
 
-  return !rowValues.some(val => val === digit) &&
-    !colValues.some(val => val === digit)
+  return ![...rowValues, ...colValues, ...boxValues].some(val => val === digit)
 }
 
 const sendDigit = ({irow, icol}) => digit => {
