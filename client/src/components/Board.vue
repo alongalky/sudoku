@@ -15,22 +15,22 @@
 </template>
 
 <script>
-import Cell from "./Cell.vue";
-import {isDigitValid} from '../App.vue'
+import Cell from './Cell.vue'
+import { isDigitValid } from '../App.vue'
 
 export default {
-  name: "Board",
+  name: 'Board',
   props: {
     board: Array,
     sendDigit: Function
   },
   methods: {
-    isDigitValid: ({irow, icol, board}) => digit => isDigitValid({irow, icol, board, digit})
+    isDigitValid: ({ irow, icol, board }) => digit => isDigitValid({ irow, icol, board, digit })
   },
   components: {
     Cell
   }
-};
+}
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->

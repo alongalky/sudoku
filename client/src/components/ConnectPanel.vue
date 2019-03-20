@@ -18,7 +18,7 @@ export default {
   },
   methods: {
     onClick: function () {
-      this.onClickConnect({name: this.name});
+      this.onClickConnect({ name: this.name })
     }
   }
 }
