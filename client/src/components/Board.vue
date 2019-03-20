@@ -1,5 +1,10 @@
 <template>
-  <div>
+  <div :class="registered ? '' : 'disabled'">
+    <div v-if="!registered" class='register-banner'>
+      <div class="box">
+        Register first!
+      </div>
+    </div>
     <ul id="example-1">
       <table class="sudoku-table">
         <tbody>
@@ -22,7 +27,8 @@ export default {
   name: 'Board',
   props: {
     board: Array,
-    sendDigit: Function
+    sendDigit: Function,
+    registered: Boolean
   },
   methods: {
     isDigitValid: ({ irow, icol, board }) => digit => isDigitValid({ irow, icol, board, digit })
@@ -45,5 +51,31 @@ export default {
   border: 1px solid black;
   width: 35px;
   height: 35px;
+}
+.disabled {
+  pointer-events:none;
+  color: lightgray;
+}
+.disabled .sudoku-table {
+  border: 3px solid lightgray;
+}
+.disabled .sudoku-table td {
+  border: 1px solid lightgray;
+}
+.register-banner {
+  position: absolute;
+  width: 100%;
+  top: 200px;
+  left: 0px;
+  text-align: center;
+  font-size: 32pt;
+  color: black;
+}
+.box {
+  border: 3px solid black;
+  padding: 20px;
+  width: 30%;
+  background-color: yellowgreen;
+  margin: auto;
 }
 </style>

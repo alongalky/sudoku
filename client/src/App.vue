@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <ConnectPanel :onClickConnect="onClickConnect" />
-    <Board :board="state.board" :sendDigit="sendDigit"/>
+    <Board :board="state.board" :sendDigit="sendDigit" :registered="state.registered"/>
     <ScoreBoard :players="state.players" />
   </div>
 </template>
@@ -21,6 +21,7 @@ socket.onmessage = event => {
 
   if (data.type === 'welcome') {
     state.playerId = data.playerId
+    state.registered = true
   }
 
   if (data.type === 'update_players') {
@@ -41,6 +42,7 @@ const parseBoard = board => board
 
 const emptyBoard = parseBoard('000000000000000000000000000000000000000000000000000000000000000000000000000000000')
 const state = {
+  registered: false,
   board: emptyBoard,
   players: [],
   playerId: null
