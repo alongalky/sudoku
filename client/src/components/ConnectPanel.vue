@@ -1,7 +1,7 @@
 <template>
   <div>
     Your Name:
-    <input type="text" v-model="name"/>
+    <input type="text" v-model="name" v-on:keyup.enter="onClick" />
     <button v-on:click="onClick">Connect</button>
   </div>
 </template>
