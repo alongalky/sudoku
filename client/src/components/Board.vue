@@ -1,5 +1,5 @@
 <template>
-  <div :class="registered ? '' : 'disabled'">
+  <div :class="`unselectable ${registered ? '' : 'disabled'}`">
     <div v-if="!registered" class='register-banner'>
       <div class="box">
         Register first!
@@ -51,6 +51,14 @@ export default {
   border: 1px solid black;
   width: 35px;
   height: 35px;
+}
+.unselectable {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 .disabled {
   pointer-events:none;

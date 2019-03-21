@@ -1,6 +1,6 @@
 <template>
-  <div>
-    Your Name:
+  <div :class="registered ? 'hide' : ''">
+    <span class="unselectable">Your Name:</span>
     <input type="text" v-model="name" v-on:keyup.enter="onClick" />
     <button v-on:click="onClick">Connect</button>
   </div>
@@ -14,7 +14,8 @@ export default {
     name: ''
   }),
   props: {
-    onClickConnect: Function
+    onClickConnect: Function,
+    registered: Boolean
   },
   methods: {
     onClick: function () {
@@ -25,4 +26,15 @@ export default {
 </script>
 
 <style scoped>
+.hide {
+  visibility: hidden;
+}
+.unselectable {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
 </style>

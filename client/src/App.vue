@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <ConnectPanel :onClickConnect="onClickConnect" />
+    <ConnectPanel :onClickConnect="onClickConnect" :registered="state.registered" />
     <Board :board="state.board" :sendDigit="sendDigit" :registered="state.registered"/>
     <ScoreBoard :players="state.players" />
   </div>
